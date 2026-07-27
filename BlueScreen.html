@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SYSTEM_EXCEPTION_HANDLED</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: #0078D7;
+            color: #FFFFFF;
+            font-family: 'Courier New', Courier, monospace;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 50px 80px;
+            overflow: hidden;
+            user-select: none;
+        }
+
+        .bsod-container {
+            max-width: 900px;
+        }
+
+        .sad-face {
+            font-size: 90px;
+            margin-bottom: 25px;
+            font-weight: normal;
+        }
+
+        .error-message {
+            font-size: 22px;
+            line-height: 1.4;
+            margin-bottom: 30px;
+        }
+
+        .footer-section {
+            display: flex;
+            align-items: flex-end;
+            gap: 30px;
+        }
+
+        .qr-placeholder {
+            width: 100px;
+            height: 100px;
+            background: #FFFFFF;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #0078D7;
+            font-weight: bold;
+            font-size: 11px;
+            text-align: center;
+            padding: 5px;
+        }
+
+        .stop-code-info {
+            font-size: 16px;
+            line-height: 1.5;
+        }
+
+        .portal-box {
+            margin-top: 20px;
+            background: rgba(0, 0, 0, 0.2);
+            border: 2px dashed #FFFFFF;
+            padding: 20px;
+            max-width: 600px;
+        }
+
+        input[type="text"] {
+            background: transparent;
+            border: 2px solid #FFFFFF;
+            color: #FFFFFF;
+            padding: 10px;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 16px;
+            width: 70%;
+            outline: none;
+        }
+
+        input[type="text"]::placeholder {
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        button {
+            background: #FFFFFF;
+            color: #0078D7;
+            border: none;
+            padding: 10px 20px;
+            font-family: 'Courier New', Courier, monospace;
+            font-weight: bold;
+            font-size: 16px;
+            cursor: pointer;
+            margin-left: 10px;
+        }
+
+        button:hover {
+            background: #e0e0e0;
+        }
+
+        .error-text {
+            color: #ffcccc;
+            margin-top: 10px;
+            font-size: 14px;
+        }
+
+        .dashboard {
+            display: none;
+        }
+
+        .suit-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-top: 15px;
+        }
+
+        .suit-option {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid #FFFFFF;
+            padding: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            font-size: 15px;
+        }
+
+        .suit-option.locked {
+            opacity: 0.4;
+            cursor: not-allowed;
+            background: rgba(0, 0, 0, 0.4);
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+
+        .suit-option input {
+            cursor: pointer;
+        }
+
+        .suit-option.locked input {
+            cursor: not-allowed;
+        }
+
+        .user-tag {
+            font-size: 14px;
+            margin-bottom: 10px;
+            color: #d1e7ff;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="bsod-container">
+        <div class="sad-face">:(</div>
+
+        <!-- LOGIN VIEW -->
+        <div id="loginView" class="error-message">
+            Your device ran into a problem and needs to restart. We're just collecting some error info, and then we'll restart for you.<br><br>
+            <span style="font-size: 18px;">[TERMINAL LOGIN REQUIRED: Enter authorized seeker ID]</span>
+
+            <div class="portal-box">
+                <div style="margin-bottom: 10px; font-size: 14px;">ENTER USERNAME:</div>
+                <input type="text" id="usernameInput" placeholder="e.g. Mneme_seeker">
+                <button onclick="handleLogin()">INITIALIZE</button>
+                <div id="loginError" class="error-text"></div>
+            </div>
+        </div>
+
+        <!-- DASHBOARD VIEW -->
+        <div id="dashboardView" class="dashboard">
+            <div class="error-message" style="margin-bottom: 15px;">
+                CRITICAL_PROCESS_DIED<br>
+                <div class="user-tag" id="displayUser">Logged in as: </div>
+            </div>
+
+            <div style="font-size: 16px; margin-bottom: 5px;">SELECT TRAUMA SUIT (Lock-in is permanent per session):</div>
+
+            <div class="suit-grid" id="suitGrid">
+                <!-- Dynamically populated via JavaScript -->
+            </div>
+            <div id="selectionStatus" class="error-text"></div>
+        </div>
+    </div>
+
+    <div class="footer-section">
+        <div class="qr-placeholder">
+            QR CODE<br>SYS_CRASH
+        </div>
+        <div class="stop-code-info">
+            For more information about this issue and possible fixes, visit https://windows.com/stopcode<br><br>
+            If you call a support person, give them this info:<br>
+            Stop code: TRAUMA_SUIT_ALLOCATION_FAULT<br>
+            Failed module: seeker_kernel.sys
+        </div>
+    </div>
+
+    <script>
+        const validUsers = [
+            "Mneme_seeker",
+            "Mirror_seeker",
+            "Written_seeker",
+            "Faded_seeker",
+            "Dule_Seeker",
+            "Old_seeker",
+            "Strong_seeker",
+            "Weaveshaper_seeker",
+            "Fabled_seeker"
+        ];
+
+        const traumaSuits = [
+            "Stealth",
+            "Mechanic",
+            "Pilot",
+            "Medic",
+            "Marine",
+            "Caster",
+            "Mobile",
+            "Diverter",
+            "Jack"
+        ];
+
+        let currentUser = "";
+
+        function getLockedSuits() {
+            const stored = localStorage.getItem('bsod_locked_trauma_suits');
+            return stored ? JSON.parse(stored) : {};
+        }
+
+        function handleLogin() {
+            const inputVal = document.getElementById('usernameInput').value.trim();
+            const errorDiv = document.getElementById('loginError');
+
+            const matchedUser = validUsers.find(u => u.toLowerCase() === inputVal.toLowerCase());
+
+            if (!matchedUser) {
+                errorDiv.textContent = "ERROR 0x80070002: Access Denied. Unknown Seeker ID.";
+                return;
+            }
+
+            currentUser = matchedUser;
+            document.getElementById('loginView').style.display = 'none';
+            document.getElementById('dashboardView').style.display = 'block';
+            document.getElementById('displayUser').textContent = `Logged in as: ${currentUser} [OK]`;
+
+            renderSuits();
+        }
+
+        function renderSuits() {
+            const grid = document.getElementById('suitGrid');
+            grid.innerHTML = '';
+            const lockedSuits = getLockedSuits();
+
+            traumaSuits.forEach(suit => {
+                const isLockedBySomeoneElse = lockedSuits[suit] && lockedSuits[suit] !== currentUser;
+                const isLockedByMe = lockedSuits[suit] === currentUser;
+
+                const label = document.createElement('label');
+                label.className = `suit-option ${(isLockedBySomeoneElse || isLockedByMe) ? 'locked' : ''}`;
+
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.value = suit;
+                checkbox.checked = isLockedByMe || isLockedBySomeoneElse;
+
+                if (isLockedBySomeoneElse || isLockedByMe) {
+                    checkbox.disabled = true;
+                } else {
+                    checkbox.onchange = () => lockSuit(suit);
+                }
+
+                const textSpan = document.createElement('span');
+                if (isLockedByMe) {
+                    textSpan.innerHTML = `**${suit}** (LOCKED BY YOU)`;
+                } else if (isLockedBySomeoneElse) {
+                    textSpan.innerHTML = `${suit} <span style="font-size:11px; opacity:0.8;">[${lockedSuits[suit]}]</span>`;
+                } else {
+                    textSpan.textContent = suit;
+                }
+
+                label.appendChild(checkbox);
+                label.appendChild(textSpan);
+                grid.appendChild(label);
+            });
+        }
+
+        function lockSuit(suit) {
+            let lockedSuits = getLockedSuits();
+
+            const userAlreadyLocked = Object.keys(lockedSuits).find(s => lockedSuits[s] === currentUser);
+            if (userAlreadyLocked) {
+                document.getElementById('selectionStatus').textContent = `FAULT: You have already allocated suit [${userAlreadyLocked}].`;
+                renderSuits();
+                return;
+            }
+
+            lockedSuits[suit] = currentUser;
+            localStorage.setItem('bsod_locked_trauma_suits', JSON.stringify(lockedSuits));
+
+            document.getElementById('selectionStatus').textContent = `SUCCESS: Trauma Suit [${suit}] permanently bound to ${currentUser}.`;
+            renderSuits();
+        }
+
+        window.addEventListener('storage', (event) => {
+            if (event.key === 'bsod_locked_trauma_suits' && currentUser) {
+                renderSuits();
+            }
+        });
+    </script>
+</body>
+</html>
