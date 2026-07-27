@@ -158,12 +158,12 @@
 
     <div class="bsod-container">
         <div class="sad-face">:(</div>
-
+        
         <!-- LOGIN VIEW -->
         <div id="loginView" class="error-message">
             Your device ran into a problem and needs to restart. We're just collecting some error info, and then we'll restart for you.<br><br>
             <span style="font-size: 18px;">[TERMINAL LOGIN REQUIRED: Enter authorized seeker ID]</span>
-
+            
             <div class="portal-box">
                 <div style="margin-bottom: 10px; font-size: 14px;">ENTER USERNAME:</div>
                 <input type="text" id="usernameInput" placeholder="e.g. Mneme_seeker">
@@ -178,9 +178,9 @@
                 CRITICAL_PROCESS_DIED<br>
                 <div class="user-tag" id="displayUser">Logged in as: </div>
             </div>
-
-            <div style="font-size: 16px; margin-bottom: 5px;">SELECT TRAUMA SUIT (Lock-in is permanent per session):</div>
-
+            
+            <div style="font-size: 16px; margin-bottom: 5px;">SELECT TRAUMA SUIT (Global Cloud Sync Active):</div>
+            
             <div class="suit-grid" id="suitGrid">
                 <!-- Dynamically populated via JavaScript -->
             </div>
@@ -200,39 +200,54 @@
         </div>
     </div>
 
-    <script>
+    <!-- Firebase SDK Scripts (Modular v10) -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getFirestore, doc, getDoc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        // Your exact Firebase configuration keys from the dashboard screenshot
+        const firebaseConfig = {
+            apiKey: "AIzaSyBlgsx3uuat9oi2vwntXhInUcAe8N-veLY",
+            authDomain: "enter-f1c88.firebaseapp.com",
+            projectId: "enter-f1c88",
+            storageBucket: "enter-f1c88.appspot.com",
+            messagingSenderId: "794692963928",
+            appId: "1:794692963928:web:83fed114aed9389bf3042d",
+            measurementId: "G-PFGVSW5598"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
         const validUsers = [
-            "Mneme_seeker",
-            "Mirror_seeker",
-            "Written_seeker",
-            "Faded_seeker",
-            "Dule_Seeker",
-            "Old_seeker",
-            "Strong_seeker",
-            "Weaveshaper_seeker",
+            "Mneme_seeker", 
+            "Mirror_seeker", 
+            "Written_seeker", 
+            "Faded_seeker", 
+            "Dule_Seeker", 
+            "Old_seeker", 
+            "Strong_seeker", 
+            "Weaveshaper_seeker", 
             "Fabled_seeker"
         ];
 
         const traumaSuits = [
-            "Stealth",
-            "Mechanic",
-            "Pilot",
-            "Medic",
-            "Marine",
-            "Caster",
-            "Mobile",
-            "Diverter",
+            "Stealth", 
+            "Mechanic", 
+            "Pilot", 
+            "Medic", 
+            "Marine", 
+            "Caster", 
+            "Mobile", 
+            "Diverter", 
             "Jack"
         ];
 
         let currentUser = "";
+        let globalLockedSuits = {};
 
-        function getLockedSuits() {
-            const stored = localStorage.getItem('bsod_locked_trauma_suits');
-            return stored ? JSON.parse(stored) : {};
-        }
-
-        function handleLogin() {
+        window.handleLogin = function() {
             const inputVal = document.getElementById('usernameInput').value.trim();
             const errorDiv = document.getElementById('loginError');
 
@@ -247,18 +262,33 @@
             document.getElementById('loginView').style.display = 'none';
             document.getElementById('dashboardView').style.display = 'block';
             document.getElementById('displayUser').textContent = `Logged in as: ${currentUser} [OK]`;
-
-            renderSuits();
+            
+            // Listen to real-time changes from Firestore database
+            initFirestoreListener();
         }
 
-        function renderSuits() {
+        function initFirestoreListener() {
+            // We reference a single document called 'allocations' inside a collection called 'trauma_suits'
+            const docRef = doc(db, "trauma_suits", "allocations");
+
+            onSnapshot(docRef, (docSnap) => {
+                if (docSnap.exists()) {
+                    globalLockedSuits = docSnap.data();
+                } else {
+                    globalLockedSuits = {};
+                }
+                renderSuits();
+            });
+        }
+
+        window.renderSuits = function() {
             const grid = document.getElementById('suitGrid');
             grid.innerHTML = '';
-            const lockedSuits = getLockedSuits();
 
             traumaSuits.forEach(suit => {
-                const isLockedBySomeoneElse = lockedSuits[suit] && lockedSuits[suit] !== currentUser;
-                const isLockedByMe = lockedSuits[suit] === currentUser;
+                const lockedUser = globalLockedSuits[suit];
+                const isLockedBySomeoneElse = lockedUser && lockedUser !== currentUser;
+                const isLockedByMe = lockedUser === currentUser;
 
                 const label = document.createElement('label');
                 label.className = `suit-option ${(isLockedBySomeoneElse || isLockedByMe) ? 'locked' : ''}`;
@@ -267,18 +297,18 @@
                 checkbox.type = 'checkbox';
                 checkbox.value = suit;
                 checkbox.checked = isLockedByMe || isLockedBySomeoneElse;
-
+                
                 if (isLockedBySomeoneElse || isLockedByMe) {
                     checkbox.disabled = true;
                 } else {
-                    checkbox.onchange = () => lockSuit(suit);
+                    checkbox.onclick = () => lockSuit(suit);
                 }
 
                 const textSpan = document.createElement('span');
                 if (isLockedByMe) {
-                    textSpan.innerHTML = `**${suit}** (LOCKED BY YOU)`;
+                    textSpan.innerHTML = `<strong>${suit}</strong> (LOCKED BY YOU)`;
                 } else if (isLockedBySomeoneElse) {
-                    textSpan.innerHTML = `${suit} <span style="font-size:11px; opacity:0.8;">[${lockedSuits[suit]}]</span>`;
+                    textSpan.innerHTML = `${suit} <span style="font-size:11px; opacity:0.8;">[${lockedUser}]</span>`;
                 } else {
                     textSpan.textContent = suit;
                 }
@@ -289,28 +319,24 @@
             });
         }
 
-        function lockSuit(suit) {
-            let lockedSuits = getLockedSuits();
-
-            const userAlreadyLocked = Object.keys(lockedSuits).find(s => lockedSuits[s] === currentUser);
+        window.lockSuit = async function(suit) {
+            // Check if user already locked another suit
+            const userAlreadyLocked = Object.keys(globalLockedSuits).find(s => globalLockedSuits[s] === currentUser);
             if (userAlreadyLocked) {
                 document.getElementById('selectionStatus').textContent = `FAULT: You have already allocated suit [${userAlreadyLocked}].`;
-                renderSuits();
                 return;
             }
 
-            lockedSuits[suit] = currentUser;
-            localStorage.setItem('bsod_locked_trauma_suits', JSON.stringify(lockedSuits));
-
-            document.getElementById('selectionStatus').textContent = `SUCCESS: Trauma Suit [${suit}] permanently bound to ${currentUser}.`;
-            renderSuits();
-        }
-
-        window.addEventListener('storage', (event) => {
-            if (event.key === 'bsod_locked_trauma_suits' && currentUser) {
-                renderSuits();
+            try {
+                globalLockedSuits[suit] = currentUser;
+                // Save update directly to Firebase Firestore
+                await setDoc(doc(db, "trauma_suits", "allocations"), globalLockedSuits);
+                document.getElementById('selectionStatus').textContent = `SUCCESS: Trauma Suit [${suit}] permanently bound to ${currentUser}.`;
+            } catch (error) {
+                document.getElementById('selectionStatus').textContent = `FAULT: Cloud synchronization error.`;
+                console.error(error);
             }
-        });
+        }
     </script>
 </body>
 </html>
